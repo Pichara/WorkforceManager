@@ -1,12 +1,10 @@
 using ElevatorMaintenanceSystem.Data;
-using ElevatorMaintenanceSystem.Infrastructure;
 using ElevatorMaintenanceSystem.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson.Serialization;
 using Serilog;
-using System.Reflection;
 
 namespace ElevatorMaintenanceSystem.Infrastructure;
 
@@ -76,9 +74,9 @@ public static class ServiceCollectionExtensions
         // Register generic repository as scoped
         services.AddScoped(typeof(IMongoRepository<>), typeof(MongoRepository<>));
 
-        // Add more specific repositories here as needed
-        // services.AddScoped<IElevatorRepository, ElevatorRepository>();
-        // services.AddScoped<IWorkerRepository, WorkerRepository>();
+        services.AddScoped<IElevatorRepository, ElevatorRepository>();
+        services.AddScoped<IWorkerRepository, WorkerRepository>();
+        services.AddSingleton<GpsCoordinateValidator>();
 
         return services;
     }

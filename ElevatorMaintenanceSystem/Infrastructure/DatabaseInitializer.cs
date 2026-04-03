@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.GeoJsonObjectModel;
 
 namespace ElevatorMaintenanceSystem.Infrastructure;
 
@@ -16,15 +15,18 @@ public class DatabaseInitializer : IHostedService
 {
     private readonly IMongoDbContext _context;
     private readonly MongoDbSettings _settings;
+    private readonly GpsCoordinateValidator _gpsCoordinateValidator;
     private readonly ILogger<DatabaseInitializer> _logger;
 
     public DatabaseInitializer(
         IMongoDbContext context,
         IOptions<MongoDbSettings> settings,
+        GpsCoordinateValidator gpsCoordinateValidator,
         ILogger<DatabaseInitializer> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _settings = settings.Value ?? throw new ArgumentNullException(nameof(settings));
+        _gpsCoordinateValidator = gpsCoordinateValidator ?? throw new ArgumentNullException(nameof(gpsCoordinateValidator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -44,6 +46,8 @@ public class DatabaseInitializer : IHostedService
 
             // Create indexes
             await CreateIndexesAsync(cancellationToken);
+
+            await SeedMockElevatorsAsync(cancellationToken);
 
             _logger.LogInformation("Database initialization completed successfully");
         }
@@ -120,28 +124,66 @@ public class DatabaseInitializer : IHostedService
             new CreateIndexModel<Worker>(Builders<Worker>.IndexKeys.Ascending(x => x.DeletedAt),
                 new CreateIndexOptions { Name = "deleted_at_idx" }));
 
-        var ticketsCollection = _context.Database.GetCollection<Ticket>("tickets");
+        var ticketsCollection = _context.Database.GetCollection<BsonDocument>("tickets");
         await ticketsCollection.Indexes.CreateOneAsync(
-            new CreateIndexModel<Ticket>(Builders<Ticket>.IndexKeys.Ascending(x => x.DeletedAt),
-                new CreateIndexOptions { Name = "deleted_at_idx" }));
+            new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("DeletedAt"),
+                new CreateIndexOptions { Name = "deleted_at_idx" }),
+            cancellationToken: cancellationToken);
 
         _logger.LogInformation("Created standard indexes for queries");
     }
-}
 
-/// <summary>
-/// Placeholder entities for index creation (will be replaced by actual models in Phase 2)
-/// </summary>
-public class Elevator : BaseDocument
-{
-    public GeoJsonPoint<GeoJson2DGeographicCoordinates> Location { get; set; } = null!;
-}
+    private async Task SeedMockElevatorsAsync(CancellationToken cancellationToken)
+    {
+        var elevatorsCollection = _context.Database.GetCollection<Elevator>("elevators");
+        var elevatorCount = await elevatorsCollection.CountDocumentsAsync(
+            Builders<Elevator>.Filter.Empty,
+            cancellationToken: cancellationToken);
 
-public class Worker : BaseDocument
-{
-    public GeoJsonPoint<GeoJson2DGeographicCoordinates> Location { get; set; } = null!;
-}
+        if (elevatorCount > 0)
+        {
+            _logger.LogInformation("Skipping mock elevator seed because collection already contains data");
+            return;
+        }
 
-public class Ticket : BaseDocument
-{
+        var mockElevators = new[]
+        {
+            new Elevator
+            {
+                Name = "North Tower Passenger Lift A",
+                Address = "350 5th Ave, New York, NY 10118",
+                BuildingName = "North Tower",
+                FloorLabel = "Lobby-25",
+                Manufacturer = "Otis",
+                InstallationDate = new DateTime(2018, 5, 12, 0, 0, 0, DateTimeKind.Utc),
+                IsActive = true,
+                Location = _gpsCoordinateValidator.CreatePoint(40.7484, -73.9857)
+            },
+            new Elevator
+            {
+                Name = "West Annex Service Lift 2",
+                Address = "11 Madison Ave, New York, NY 10010",
+                BuildingName = "West Annex",
+                FloorLabel = "B2-18",
+                Manufacturer = "KONE",
+                InstallationDate = new DateTime(2020, 9, 3, 0, 0, 0, DateTimeKind.Utc),
+                IsActive = true,
+                Location = _gpsCoordinateValidator.CreatePoint(40.7411, -73.9872)
+            },
+            new Elevator
+            {
+                Name = "River Plaza Freight Lift",
+                Address = "200 Vesey St, New York, NY 10281",
+                BuildingName = "River Plaza",
+                FloorLabel = "Dock-12",
+                Manufacturer = "Schindler",
+                InstallationDate = new DateTime(2016, 2, 18, 0, 0, 0, DateTimeKind.Utc),
+                IsActive = true,
+                Location = _gpsCoordinateValidator.CreatePoint(40.7148, -74.0153)
+            }
+        };
+
+        await elevatorsCollection.InsertManyAsync(mockElevators, cancellationToken: cancellationToken);
+        _logger.LogInformation("Seeded {ElevatorCount} mock elevators", mockElevators.Length);
+    }
 }
