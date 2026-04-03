@@ -19,6 +19,8 @@ public partial class MainViewModel : ViewModelBase
 
     public TicketManagementViewModel TicketManagement { get; }
 
+    public TicketReportViewModel ReportManagement { get; }
+
     [ObservableProperty]
     private string _connectionStatus = "Connecting...";
 
@@ -28,6 +30,7 @@ public partial class MainViewModel : ViewModelBase
         ElevatorManagementViewModel elevatorManagement,
         WorkerManagementViewModel workerManagement,
         TicketManagementViewModel ticketManagement,
+        TicketReportViewModel reportManagement,
         ILogger<MainViewModel> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -35,6 +38,7 @@ public partial class MainViewModel : ViewModelBase
         ElevatorManagement = elevatorManagement ?? throw new ArgumentNullException(nameof(elevatorManagement));
         WorkerManagement = workerManagement ?? throw new ArgumentNullException(nameof(workerManagement));
         TicketManagement = ticketManagement ?? throw new ArgumentNullException(nameof(ticketManagement));
+        ReportManagement = reportManagement ?? throw new ArgumentNullException(nameof(reportManagement));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _ = TestConnectionAsync();

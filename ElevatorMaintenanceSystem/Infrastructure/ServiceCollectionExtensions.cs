@@ -82,6 +82,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWorkerService, WorkerService>();
         services.AddScoped<ITicketService, TicketService>();
         services.AddSingleton<IUserContext, WindowsUserContext>();
+        services.AddScoped<TicketReportViewModel>();
+
         services.AddSingleton<GpsCoordinateValidator>();
 
         return services;
