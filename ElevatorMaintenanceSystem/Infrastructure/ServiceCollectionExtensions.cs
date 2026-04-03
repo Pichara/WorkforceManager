@@ -1,5 +1,6 @@
 using ElevatorMaintenanceSystem.Data;
 using ElevatorMaintenanceSystem.Models;
+using ElevatorMaintenanceSystem.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -76,6 +77,8 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IElevatorRepository, ElevatorRepository>();
         services.AddScoped<IWorkerRepository, WorkerRepository>();
+        services.AddScoped<IElevatorService, ElevatorService>();
+        services.AddScoped<IWorkerService, WorkerService>();
         services.AddSingleton<GpsCoordinateValidator>();
 
         return services;
