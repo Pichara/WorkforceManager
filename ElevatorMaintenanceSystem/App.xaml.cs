@@ -28,6 +28,7 @@ public partial class App : Application
                 services.AddRepositories();
                 services.AddTransient<ElevatorManagementViewModel>();
                 services.AddTransient<WorkerManagementViewModel>();
+                services.AddTransient<TicketManagementViewModel>();
                 services.AddTransient<MainViewModel>();
                 services.AddTransient<MainWindow>();
             })

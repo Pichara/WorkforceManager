@@ -17,6 +17,8 @@ public partial class MainViewModel : ViewModelBase
 
     public WorkerManagementViewModel WorkerManagement { get; }
 
+    public TicketManagementViewModel TicketManagement { get; }
+
     [ObservableProperty]
     private string _connectionStatus = "Connecting...";
 
@@ -25,12 +27,14 @@ public partial class MainViewModel : ViewModelBase
         MongoDbSettings settings,
         ElevatorManagementViewModel elevatorManagement,
         WorkerManagementViewModel workerManagement,
+        TicketManagementViewModel ticketManagement,
         ILogger<MainViewModel> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         ElevatorManagement = elevatorManagement ?? throw new ArgumentNullException(nameof(elevatorManagement));
         WorkerManagement = workerManagement ?? throw new ArgumentNullException(nameof(workerManagement));
+        TicketManagement = ticketManagement ?? throw new ArgumentNullException(nameof(ticketManagement));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _ = TestConnectionAsync();
@@ -53,6 +57,7 @@ public partial class MainViewModel : ViewModelBase
 
                 await ElevatorManagement.LoadElevatorsAsync();
                 await WorkerManagement.LoadWorkersAsync();
+                await TicketManagement.LoadTicketsAsync();
             }
             else
             {

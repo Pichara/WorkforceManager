@@ -428,6 +428,271 @@
                         </Border>
                     </Grid>
                 </TabItem>
+
+                <TabItem Header="Tickets">
+                    <Grid Margin="0,14,0,0"
+                          DataContext="{Binding TicketManagement}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.6*" />
+                            <ColumnDefinition Width="26" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0"
+                                Padding="18"
+                                Background="#F7FAFD"
+                                BorderBrush="#D9E3EC"
+                                BorderThickness="1"
+                                CornerRadius="14">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Left">
+                                        <TextBlock Text="Ticket Workflow"
+                                                   FontSize="20"
+                                                   FontWeight="Bold"
+                                                   Foreground="#17324D" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Text="Track ticket lifecycle, worker assignment, and audit history from one workspace."
+                                                   Foreground="#5F7184"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <Button DockPanel.Dock="Right"
+                                            MinWidth="110"
+                                            Padding="14,8"
+                                            Margin="12,0,0,0"
+                                            Command="{Binding LoadCommand}"
+                                            Content="Refresh" />
+                                </DockPanel>
+
+                                <TextBlock Grid.Row="1"
+                                           Margin="0,14,0,10"
+                                           Text="{Binding StatusMessage}"
+                                           Foreground="#2F5D85"
+                                           FontWeight="SemiBold" />
+
+                                <DataGrid Grid.Row="2"
+                                          AutoGenerateColumns="False"
+                                          CanUserAddRows="False"
+                                          HeadersVisibility="Column"
+                                          IsReadOnly="True"
+                                          ItemsSource="{Binding TicketRows}"
+                                          SelectedItem="{Binding SelectedTicketRow, Mode=TwoWay}"
+                                          SelectionMode="Single"
+                                          GridLinesVisibility="Horizontal"
+                                          RowHeaderWidth="0">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Description"
+                                                            Width="1.7*"
+                                                            Binding="{Binding Description}" />
+                                        <DataGridTextColumn Header="Issue"
+                                                            Width="*"
+                                                            Binding="{Binding IssueType}" />
+                                        <DataGridTextColumn Header="Priority"
+                                                            Width="0.9*"
+                                                            Binding="{Binding Priority}" />
+                                        <DataGridTextColumn Header="Status"
+                                                            Width="0.9*"
+                                                            Binding="{Binding Status}" />
+                                        <DataGridTextColumn Header="Requested"
+                                                            Width="1.1*"
+                                                            Binding="{Binding RequestedDate, StringFormat=g}" />
+                                        <DataGridTextColumn Header="Assigned Worker"
+                                                            Width="1.2*"
+                                                            Binding="{Binding AssignedWorkerDisplay}" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="2"
+                                Padding="18"
+                                Background="#FCFDFE"
+                                BorderBrush="#D9E3EC"
+                                BorderThickness="1"
+                                CornerRadius="14">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Text="Ticket Editor"
+                                           FontSize="20"
+                                           FontWeight="Bold"
+                                           Foreground="#17324D" />
+                                <TextBlock Grid.Row="1"
+                                           Margin="0,4,0,14"
+                                           Text="Create and manage ticket details, assignments, status changes, and audit review."
+                                           Foreground="#5F7184"
+                                           TextWrapping="Wrap" />
+
+                                <StackPanel Grid.Row="2">
+                                    <TextBlock Text="Elevator" FontWeight="SemiBold" />
+                                    <ComboBox Margin="0,6,0,10"
+                                              ItemsSource="{Binding Elevators}"
+                                              DisplayMemberPath="Name"
+                                              SelectedValuePath="Id"
+                                              SelectedValue="{Binding SelectedElevatorId, Mode=TwoWay}" />
+
+                                    <TextBlock Text="Description" FontWeight="SemiBold" />
+                                    <TextBox Margin="0,6,0,10"
+                                             Height="48"
+                                             AcceptsReturn="True"
+                                             TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto"
+                                             Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+
+                                <UniformGrid Grid.Row="3"
+                                             Columns="2"
+                                             Margin="0,0,0,10">
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Issue Type" FontWeight="SemiBold" />
+                                        <ComboBox Margin="0,6,0,0"
+                                                  SelectedValue="{Binding IssueType, Mode=TwoWay}"
+                                                  SelectedValuePath="Tag">
+                                            <ComboBoxItem Tag="{x:Static models:TicketIssueType.Mechanical}" Content="Mechanical" />
+                                            <ComboBoxItem Tag="{x:Static models:TicketIssueType.Electrical}" Content="Electrical" />
+                                            <ComboBoxItem Tag="{x:Static models:TicketIssueType.Safety}" Content="Safety" />
+                                            <ComboBoxItem Tag="{x:Static models:TicketIssueType.Inspection}" Content="Inspection" />
+                                            <ComboBoxItem Tag="{x:Static models:TicketIssueType.Entrapment}" Content="Entrapment" />
+                                            <ComboBoxItem Tag="{x:Static models:TicketIssueType.Other}" Content="Other" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Priority" FontWeight="SemiBold" />
+                                        <ComboBox Margin="0,6,0,0"
+                                                  SelectedValue="{Binding Priority, Mode=TwoWay}"
+                                                  SelectedValuePath="Tag">
+                                            <ComboBoxItem Tag="{x:Static models:TicketPriority.Low}" Content="Low" />
+                                            <ComboBoxItem Tag="{x:Static models:TicketPriority.Medium}" Content="Medium" />
+                                            <ComboBoxItem Tag="{x:Static models:TicketPriority.High}" Content="High" />
+                                            <ComboBoxItem Tag="{x:Static models:TicketPriority.Critical}" Content="Critical" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                </UniformGrid>
+
+                                <UniformGrid Grid.Row="4"
+                                             Columns="2"
+                                             Margin="0,0,0,10">
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Requested Date" FontWeight="SemiBold" />
+                                        <DatePicker Margin="0,6,0,0"
+                                                    SelectedDate="{Binding RequestedDate, Mode=TwoWay}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Assign Worker" FontWeight="SemiBold" />
+                                        <ComboBox Margin="0,6,0,0"
+                                                  ItemsSource="{Binding Workers}"
+                                                  DisplayMemberPath="FullName"
+                                                  SelectedValuePath="Id"
+                                                  SelectedValue="{Binding SelectedWorkerId, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </UniformGrid>
+
+                                <StackPanel Grid.Row="5"
+                                            Margin="0,0,0,10">
+                                    <TextBlock Text="Next Status" FontWeight="SemiBold" />
+                                    <ComboBox Margin="0,6,0,0"
+                                              SelectedValue="{Binding NextStatus, Mode=TwoWay}"
+                                              SelectedValuePath="Tag">
+                                        <ComboBoxItem Tag="{x:Static models:TicketStatus.Pending}" Content="Pending" />
+                                        <ComboBoxItem Tag="{x:Static models:TicketStatus.Assigned}" Content="Assigned" />
+                                        <ComboBoxItem Tag="{x:Static models:TicketStatus.InProgress}" Content="In Progress" />
+                                        <ComboBoxItem Tag="{x:Static models:TicketStatus.Resolved}" Content="Resolved" />
+                                        <ComboBoxItem Tag="{x:Static models:TicketStatus.Closed}" Content="Closed" />
+                                        <ComboBoxItem Tag="{x:Static models:TicketStatus.Canceled}" Content="Canceled" />
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <UniformGrid Grid.Row="6"
+                                             Margin="0,0,0,12"
+                                             Columns="4"
+                                             Rows="2">
+                                    <Button Margin="0,0,8,8"
+                                            Padding="10,5"
+                                            Command="{Binding CreateCommand}"
+                                            Content="Create" />
+                                    <Button Margin="0,0,8,8"
+                                            Padding="10,5"
+                                            Command="{Binding UpdateDetailsCommand}"
+                                            Content="Update Details" />
+                                    <Button Margin="0,0,8,8"
+                                            Padding="10,5"
+                                            Command="{Binding AssignWorkerCommand}"
+                                            Content="Assign Worker" />
+                                    <Button Margin="0,0,0,8"
+                                            Padding="10,5"
+                                            Command="{Binding UnassignWorkerCommand}"
+                                            Content="Unassign Worker" />
+                                    <Button Margin="0,0,8,0"
+                                            Padding="10,5"
+                                            Command="{Binding ChangeStatusCommand}"
+                                            Content="Change Status" />
+                                    <Button Margin="0,0,8,0"
+                                            Padding="10,5"
+                                            Command="{Binding CancelCommand}"
+                                            Content="Cancel" />
+                                    <Button Margin="0,0,8,0"
+                                            Padding="10,5"
+                                            Command="{Binding DeleteCanceledCommand}"
+                                            Content="Delete Canceled" />
+                                    <Button Margin="0,0,0,0"
+                                            Padding="10,5"
+                                            Command="{Binding ResetCommand}"
+                                            Content="Reset" />
+                                </UniformGrid>
+
+                                <StackPanel Grid.Row="7"
+                                            Margin="0,0,0,10">
+                                    <Separator Margin="0,0,0,10" />
+                                    <TextBlock Text="Audit Trail"
+                                               FontSize="18"
+                                               FontWeight="Bold"
+                                               Foreground="#17324D" />
+                                    <TextBlock Margin="0,4,0,0"
+                                               Text="Review ticket history before deleting canceled records."
+                                               Foreground="#5F7184"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <DataGrid Grid.Row="8"
+                                          AutoGenerateColumns="False"
+                                          CanUserAddRows="False"
+                                          HeadersVisibility="Column"
+                                          IsReadOnly="True"
+                                          ItemsSource="{Binding AuditTrail}"
+                                          GridLinesVisibility="Horizontal"
+                                          RowHeaderWidth="0">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="OccurredAtUtc"
+                                                            Width="1.2*"
+                                                            Binding="{Binding OccurredAtUtc, StringFormat=g}" />
+                                        <DataGridTextColumn Header="ChangedBy"
+                                                            Width="*"
+                                                            Binding="{Binding ChangedBy}" />
+                                        <DataGridTextColumn Header="Message"
+                                                            Width="2*"
+                                                            Binding="{Binding Message}" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
             </TabControl>
         </Border>
     </Grid>

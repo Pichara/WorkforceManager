@@ -77,8 +77,11 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IElevatorRepository, ElevatorRepository>();
         services.AddScoped<IWorkerRepository, WorkerRepository>();
+        services.AddScoped<ITicketRepository, TicketRepository>();
         services.AddScoped<IElevatorService, ElevatorService>();
         services.AddScoped<IWorkerService, WorkerService>();
+        services.AddScoped<ITicketService, TicketService>();
+        services.AddSingleton<IUserContext, WindowsUserContext>();
         services.AddSingleton<GpsCoordinateValidator>();
 
         return services;

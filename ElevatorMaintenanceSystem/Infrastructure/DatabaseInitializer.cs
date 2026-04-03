@@ -130,6 +130,23 @@ public class DatabaseInitializer : IHostedService
                 new CreateIndexOptions { Name = "deleted_at_idx" }),
             cancellationToken: cancellationToken);
 
+        var typedTicketsCollection = _context.Database.GetCollection<Ticket>("tickets");
+        await typedTicketsCollection.Indexes.CreateManyAsync(
+        [
+            new CreateIndexModel<Ticket>(
+                Builders<Ticket>.IndexKeys.Ascending(x => x.Status),
+                new CreateIndexOptions { Name = "ticket_status_idx" }),
+            new CreateIndexModel<Ticket>(
+                Builders<Ticket>.IndexKeys.Ascending(x => x.ElevatorId),
+                new CreateIndexOptions { Name = "ticket_elevator_idx" }),
+            new CreateIndexModel<Ticket>(
+                Builders<Ticket>.IndexKeys.Ascending(x => x.AssignedWorkerId),
+                new CreateIndexOptions { Name = "ticket_assigned_worker_idx" }),
+            new CreateIndexModel<Ticket>(
+                Builders<Ticket>.IndexKeys.Ascending(x => x.RequestedDate),
+                new CreateIndexOptions { Name = "ticket_requested_date_idx" })
+        ], cancellationToken: cancellationToken);
+
         _logger.LogInformation("Created standard indexes for queries");
     }
 
