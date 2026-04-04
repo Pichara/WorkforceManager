@@ -1,0 +1,207 @@
+<UserControl x:Class="ElevatorMaintenanceSystem.Views.MapView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+             mc:Ignorable="d"
+             Unloaded="OnUnloaded"
+             d:DesignHeight="800" d:DesignWidth="1200">
+    <UserControl.Resources>
+        <Style x:Key="MapCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="24"/>
+            <Setter Property="Margin" Value="0,0,0,24"/>
+        </Style>
+
+        <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#17324D"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <Style x:Key="HelperTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+        </Style>
+
+        <Style x:Key="StatusTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Foreground" Value="#3B82F6"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <Style x:Key="LegendRowStyle" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Margin" Value="0,8"/>
+        </Style>
+
+        <Style x:Key="LegendDotStyle" TargetType="Ellipse">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+
+        <Style x:Key="LegendLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#334155"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="DetailLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="DetailValueStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#1E293B"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+        </Style>
+
+        <Style x:Key="GuidanceTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <Style x:Key="GuidanceTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#17324D"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="24,24,24,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2.2*"/>
+            <ColumnDefinition Width="24"/>
+            <ColumnDefinition Width="0.8*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left Column: Map Canvas -->
+        <Border Grid.Column="0" Style="{StaticResource MapCardStyle}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Map" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Grid.Row="1" Text="View elevator locations and worker availability across the Waterloo/Kitchener region." Style="{StaticResource HelperTextStyle}"/>
+
+                <Grid Grid.Row="2">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusTextStyle}" VerticalAlignment="Center"/>
+                    <Button Content="{Binding IsBusy, Converter={StaticResource BooleanToRefreshTextConverter}}"
+                            Command="{Binding RefreshMapCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            HorizontalAlignment="Right"
+                            Width="120"
+                            IsEnabled="{Binding RefreshMapCommand, Path=CanExecute}"/>
+                </Grid>
+
+                <Border Grid.Row="3" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Margin="0,8,0,0" Background="#F8FAFC" MinHeight="640">
+                    <wv2:WebView2 x:Name="MapWebView" DefaultBackgroundColor="Transparent"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Right Rail -->
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Legend -->
+            <Border Grid.Row="0" Style="{StaticResource MapCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="Legend" Style="{StaticResource SectionHeaderStyle}"/>
+                    <Separator Margin="0,0,0,16"/>
+
+                    <StackPanel Style="{StaticResource LegendRowStyle}">
+                        <Ellipse Style="{StaticResource LegendDotStyle}" Fill="#17324D" Stroke="#17324D" StrokeThickness="2"/>
+                        <TextBlock Text="Elevator" Style="{StaticResource LegendLabelStyle}"/>
+                    </StackPanel>
+
+                    <StackPanel Style="{StaticResource LegendRowStyle}">
+                        <Ellipse Style="{StaticResource LegendDotStyle}" Fill="#2F855A" Stroke="#2F855A" StrokeThickness="2"/>
+                        <TextBlock Text="Available Worker" Style="{StaticResource LegendLabelStyle}"/>
+                    </StackPanel>
+
+                    <StackPanel Style="{StaticResource LegendRowStyle}">
+                        <Ellipse Style="{StaticResource LegendDotStyle}" Fill="#94A3B8" Stroke="#94A3B8" StrokeThickness="2"/>
+                        <TextBlock Text="Unavailable Worker" Style="{StaticResource LegendLabelStyle}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Selected Item -->
+            <Border Grid.Row="2" Style="{StaticResource MapCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="Selected Item" Style="{StaticResource SectionHeaderStyle}"/>
+                    <Separator Margin="0,0,0,16"/>
+
+                    <ContentControl Content="{Binding SelectedItemTitle}">
+                        <ContentControl.ContentTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Style="{StaticResource SectionHeaderStyle}" FontSize="16"/>
+                            </DataTemplate>
+                        </ContentControl.ContentTemplate>
+                    </ContentControl>
+
+                    <ContentControl Content="{Binding SelectedItemTitle}">
+                        <ContentControl.ContentTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding ., Converter={StaticResource EmptyToPlaceholderConverter}, ConverterParameter='Click a marker to view details'}"
+                                           Style="{StaticResource HelperTextStyle}" Margin="0,8,0,0"/>
+                            </DataTemplate>
+                        </ContentControl.ContentTemplate>
+                    </ContentControl>
+
+                    <TextBlock Text="{Binding SelectedItemDetail}" Style="{StaticResource DetailValueStyle}" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Map Guidance -->
+            <Border Grid.Row="4" Style="{StaticResource MapCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="Map Guidance" Style="{StaticResource SectionHeaderStyle}"/>
+                    <Separator Margin="0,0,0,16"/>
+
+                    <TextBlock Text="Default View" Style="{StaticResource GuidanceTitleStyle}"/>
+                    <TextBlock Text="Map opens centered on Waterloo/Kitchener, Ontario." Style="{StaticResource GuidanceTextStyle}" Margin="0,0,0,16"/>
+
+                    <TextBlock Text="Refresh" Style="{StaticResource GuidanceTitleStyle}"/>
+                    <TextBlock Text="Select Refresh Map to update elevator and worker data. Current zoom and layer are preserved." Style="{StaticResource GuidanceTextStyle}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

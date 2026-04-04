@@ -28,10 +28,17 @@ public static class ServiceCollectionExtensions
         services.Configure<MongoDbSettings>(
             configuration.GetSection(MongoDbSettings.SectionName));
 
+        services.Configure<MapSettings>(
+            configuration.GetSection(MapSettings.SectionName));
+
         // Register settings as a singleton for easy injection
         var mongoSettings = configuration.GetSection(MongoDbSettings.SectionName).Get<MongoDbSettings>()
             ?? new MongoDbSettings();
         services.AddSingleton(mongoSettings);
+
+        var mapSettings = configuration.GetSection(MapSettings.SectionName).Get<MapSettings>()
+            ?? new MapSettings();
+        services.AddSingleton(mapSettings);
 
         return services;
     }
@@ -84,8 +91,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITicketService, TicketService>();
         services.AddSingleton<IUserContext, WindowsUserContext>();
         services.AddScoped<TicketReportViewModel>();
+        services.AddScoped<MapViewModel>();
 
         services.AddSingleton<GpsCoordinateValidator>();
+
+        // Register map services
+        services.AddScoped<IMapDataService, MapDataService>();
 
         return services;
     }

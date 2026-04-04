@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <!-- Data Layer -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3856.49" />
     <PackageReference Include="MongoDB.Driver" Version="2.28.0" />
 
     <!-- MVVM Framework -->
@@ -35,6 +36,12 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\Map\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
