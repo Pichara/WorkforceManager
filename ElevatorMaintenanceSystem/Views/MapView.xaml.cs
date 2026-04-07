@@ -13,31 +13,55 @@ namespace ElevatorMaintenanceSystem.Views;
 /// </summary>
 public partial class MapView : UserControl
 {
-    private readonly MapViewModel _viewModel;
+    private MapViewModel? _viewModel;
     private readonly JsonSerializerOptions _jsonOptions;
 
     public MapView()
     {
         InitializeComponent();
 
-        _viewModel = Ioc.Default.GetRequiredService<MapViewModel>();
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        DataContext = _viewModel;
         Loaded += OnLoaded;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        // Get ViewModel from DataContext if not already set
+        if (DataContext is MapViewModel viewModel && _viewModel == null)
+        {
+            _viewModel = viewModel;
+        }
+        else if (_viewModel == null)
+        {
+            try
+            {
+                _viewModel = Ioc.Default.GetRequiredService<MapViewModel>();
+                DataContext = _viewModel;
+            }
+            catch
+            {
+                // Ioc not configured, rely on DataContext binding
+            }
+        }
+
         await InitializeWebViewAsync();
-        await _viewModel.LoadMapAsync();
+        if (_viewModel != null)
+        {
+            await _viewModel.LoadMapAsync();
+        }
     }
 
     private async Task InitializeWebViewAsync()
     {
+        if (_viewModel == null)
+        {
+            return;
+        }
+
         try
         {
             await MapWebView.EnsureCoreWebView2Async();
@@ -67,7 +91,7 @@ public partial class MapView : UserControl
 
     private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(e.WebMessageAsJson))
+        if (_viewModel == null || string.IsNullOrWhiteSpace(e.WebMessageAsJson))
         {
             return;
         }
@@ -135,7 +159,7 @@ public partial class MapView : UserControl
 
     private void SendMapData()
     {
-        if (MapWebView.CoreWebView2 == null)
+        if (_viewModel == null || MapWebView.CoreWebView2 == null)
         {
             return;
         }

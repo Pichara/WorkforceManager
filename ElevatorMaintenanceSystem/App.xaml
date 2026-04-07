@@ -1,7 +1,9 @@
 <Application x:Class="ElevatorMaintenanceSystem.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:ElevatorMaintenanceSystem.Infrastructure.Converters">
     <Application.Resources>
-        <!-- Global resources and styles will be added here -->
+        <converters:BooleanToRefreshTextConverter x:Key="BooleanToRefreshTextConverter"/>
+        <converters:EmptyToPlaceholderConverter x:Key="EmptyToPlaceholderConverter"/>
     </Application.Resources>
 </Application>
