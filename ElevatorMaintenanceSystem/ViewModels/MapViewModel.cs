@@ -215,7 +215,10 @@ public partial class MapViewModel : ViewModelBase
         SelectedItemDetail = string.Empty;
     }
 
-    public async Task HandleElevatorFocusedAsync(Guid elevatorId, CancellationToken cancellationToken = default)
+    public async Task HandleElevatorFocusedAsync(
+        Guid elevatorId,
+        string? elevatorTitle = null,
+        CancellationToken cancellationToken = default)
     {
         await RunBusyOperationAsync(async () =>
         {
@@ -233,13 +236,23 @@ public partial class MapViewModel : ViewModelBase
             }
             RefreshWorkerSuggestions();
 
+            if (!string.IsNullOrWhiteSpace(elevatorTitle))
+            {
+                SelectedItemTitle = elevatorTitle;
+            }
+
             StatusMessage = SelectedElevatorTickets.Count == 0
                 ? "No active tickets found for the selected elevator."
                 : $"Loaded {SelectedElevatorTickets.Count} active ticket(s) for the selected elevator.";
         }, "Loading elevator ticket context failed.");
     }
 
-    public async Task HandleWorkerDroppedOnElevatorAsync(Guid workerId, Guid elevatorId, CancellationToken cancellationToken = default)
+    public async Task HandleWorkerDroppedOnElevatorAsync(
+        Guid workerId,
+        Guid elevatorId,
+        string? workerTitle = null,
+        string? elevatorTitle = null,
+        CancellationToken cancellationToken = default)
     {
         if (!SelectedTicketId.HasValue)
         {
@@ -275,6 +288,16 @@ public partial class MapViewModel : ViewModelBase
                 SelectedTicketId = null;
             }
             RefreshWorkerSuggestions();
+
+            if (!string.IsNullOrWhiteSpace(elevatorTitle))
+            {
+                SelectedItemTitle = elevatorTitle;
+            }
+
+            if (!string.IsNullOrWhiteSpace(workerTitle))
+            {
+                SelectedItemDetail = $"Assigned worker: {workerTitle}";
+            }
 
             MapErrorMessage = string.Empty;
             StatusMessage = assignmentResult.StatusMessage;

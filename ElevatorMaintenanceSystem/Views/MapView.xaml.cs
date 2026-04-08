@@ -89,7 +89,7 @@ public partial class MapView : UserControl
         }
     }
 
-    private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+    private async void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
         if (_viewModel == null || string.IsNullOrWhiteSpace(e.WebMessageAsJson))
         {
@@ -98,9 +98,10 @@ public partial class MapView : UserControl
 
         try
         {
-            var message = JsonSerializer.Deserialize<JsonElement>(e.WebMessageAsJson, _jsonOptions);
+            var message = DeserializeMessage(e.WebMessageAsJson);
 
-            if (message.TryGetProperty("type", out var typeProperty))
+            if (message.ValueKind == JsonValueKind.Object &&
+                message.TryGetProperty("type", out var typeProperty))
             {
                 var messageType = typeProperty.GetString();
 
@@ -144,6 +145,27 @@ public partial class MapView : UserControl
                         }
                         break;
 
+                    case "elevatorFocused":
+                        if (TryGetGuid(message, "elevatorId", out var focusedElevatorId))
+                        {
+                            await _viewModel.HandleElevatorFocusedAsync(
+                                focusedElevatorId,
+                                GetString(message, "elevatorTitle"));
+                        }
+                        break;
+
+                    case "workerDroppedOnElevator":
+                        if (TryGetGuid(message, "workerId", out var workerId) &&
+                            TryGetGuid(message, "elevatorId", out var droppedElevatorId))
+                        {
+                            await _viewModel.HandleWorkerDroppedOnElevatorAsync(
+                                workerId,
+                                droppedElevatorId,
+                                GetString(message, "workerTitle"),
+                                GetString(message, "elevatorTitle"));
+                        }
+                        break;
+
                     case "mapCleared":
                         // User clicked empty map space
                         _viewModel.ClearSelectedItem();
@@ -155,6 +177,45 @@ public partial class MapView : UserControl
         {
             // Ignore malformed messages
         }
+    }
+
+    private JsonElement DeserializeMessage(string webMessageAsJson)
+    {
+        var message = JsonSerializer.Deserialize<JsonElement>(webMessageAsJson, _jsonOptions);
+
+        if (message.ValueKind == JsonValueKind.String)
+        {
+            var messageText = message.GetString();
+            if (!string.IsNullOrWhiteSpace(messageText))
+            {
+                message = JsonSerializer.Deserialize<JsonElement>(messageText, _jsonOptions);
+            }
+        }
+
+        return message;
+    }
+
+    private static bool TryGetGuid(JsonElement message, string propertyName, out Guid value)
+    {
+        value = Guid.Empty;
+
+        if (!message.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        return Guid.TryParse(property.GetString(), out value);
+    }
+
+    private static string? GetString(JsonElement message, string propertyName)
+    {
+        if (!message.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var value = property.GetString();
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     private void SendMapData()
