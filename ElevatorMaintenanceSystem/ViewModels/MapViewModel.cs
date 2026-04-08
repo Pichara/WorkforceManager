@@ -3,6 +3,7 @@ using ElevatorMaintenanceSystem.Infrastructure;
 using ElevatorMaintenanceSystem.Infrastructure.Commands;
 using ElevatorMaintenanceSystem.Services;
 using Microsoft.Extensions.Logging;
+using System.Collections.ObjectModel;
 using System.Text.Json;
 
 namespace ElevatorMaintenanceSystem.ViewModels;
@@ -13,6 +14,7 @@ namespace ElevatorMaintenanceSystem.ViewModels;
 public partial class MapViewModel : ViewModelBase
 {
     private readonly IMapDataService _mapDataService;
+    private readonly IMapDispatchService _mapDispatchService;
     private readonly MapSettings _mapSettings;
     private readonly ILogger<MapViewModel> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
@@ -33,6 +35,12 @@ public partial class MapViewModel : ViewModelBase
     private string _selectedItemDetail = string.Empty;
 
     [ObservableProperty]
+    private Guid? _selectedElevatorId;
+
+    [ObservableProperty]
+    private Guid? _selectedTicketId;
+
+    [ObservableProperty]
     private string _selectedBaseLayer = string.Empty;
 
     [ObservableProperty]
@@ -50,15 +58,27 @@ public partial class MapViewModel : ViewModelBase
     [ObservableProperty]
     private string _mapErrorMessage = string.Empty;
 
+    public ObservableCollection<ElevatorTicketSummary> SelectedElevatorTickets { get; } = [];
+
     public AsyncRelayCommand RefreshMapCommand { get; }
 
     public MapViewModel(
         IMapDataService mapDataService,
         MapSettings mapSettings,
         ILogger<MapViewModel> logger)
+        : this(mapDataService, mapSettings, new NoOpMapDispatchService(), logger)
+    {
+    }
+
+    public MapViewModel(
+        IMapDataService mapDataService,
+        MapSettings mapSettings,
+        IMapDispatchService mapDispatchService,
+        ILogger<MapViewModel> logger)
     {
         _mapDataService = mapDataService ?? throw new ArgumentNullException(nameof(mapDataService));
         _mapSettings = mapSettings ?? throw new ArgumentNullException(nameof(mapSettings));
+        _mapDispatchService = mapDispatchService ?? throw new ArgumentNullException(nameof(mapDispatchService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _jsonOptions = new JsonSerializerOptions
@@ -175,6 +195,70 @@ public partial class MapViewModel : ViewModelBase
         SelectedItemDetail = string.Empty;
     }
 
+    public async Task HandleElevatorFocusedAsync(Guid elevatorId, CancellationToken cancellationToken = default)
+    {
+        await RunBusyOperationAsync(async () =>
+        {
+            StatusMessage = "Loading elevator ticket context...";
+            MapErrorMessage = string.Empty;
+
+            var context = await _mapDispatchService.LoadElevatorTicketContextAsync(elevatorId, cancellationToken);
+
+            SelectedElevatorId = context.ElevatorId;
+            ReplaceCollection(SelectedElevatorTickets, context.ActiveTickets);
+
+            if (SelectedTicketId.HasValue && !SelectedElevatorTickets.Any(ticket => ticket.TicketId == SelectedTicketId.Value))
+            {
+                SelectedTicketId = null;
+            }
+
+            StatusMessage = SelectedElevatorTickets.Count == 0
+                ? "No active tickets found for the selected elevator."
+                : $"Loaded {SelectedElevatorTickets.Count} active ticket(s) for the selected elevator.";
+        }, "Loading elevator ticket context failed.");
+    }
+
+    public async Task HandleWorkerDroppedOnElevatorAsync(Guid workerId, Guid elevatorId, CancellationToken cancellationToken = default)
+    {
+        if (!SelectedTicketId.HasValue)
+        {
+            const string missingTicketMessage = "Select an elevator ticket before assigning a worker.";
+            MapErrorMessage = missingTicketMessage;
+            StatusMessage = missingTicketMessage;
+            return;
+        }
+
+        await RunBusyOperationAsync(async () =>
+        {
+            StatusMessage = "Assigning worker to selected ticket...";
+            MapErrorMessage = string.Empty;
+
+            var assignmentResult = await _mapDispatchService.AssignWorkerToTicketAsync(
+                SelectedTicketId.Value,
+                workerId,
+                cancellationToken);
+
+            if (!assignmentResult.Success)
+            {
+                MapErrorMessage = assignmentResult.ErrorMessage ?? "Worker assignment failed.";
+                StatusMessage = assignmentResult.StatusMessage;
+                return;
+            }
+
+            var refreshedContext = await _mapDispatchService.LoadElevatorTicketContextAsync(elevatorId, cancellationToken);
+            SelectedElevatorId = refreshedContext.ElevatorId;
+            ReplaceCollection(SelectedElevatorTickets, refreshedContext.ActiveTickets);
+
+            if (!SelectedElevatorTickets.Any(ticket => ticket.TicketId == assignmentResult.TicketId))
+            {
+                SelectedTicketId = null;
+            }
+
+            MapErrorMessage = string.Empty;
+            StatusMessage = assignmentResult.StatusMessage;
+        }, "Assigning worker from map drop failed.");
+    }
+
     private async Task RunBusyOperationAsync(Func<Task> action, string failureMessage)
     {
         try
@@ -191,6 +275,34 @@ public partial class MapViewModel : ViewModelBase
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    private static void ReplaceCollection<T>(ObservableCollection<T> collection, IEnumerable<T> items)
+    {
+        collection.Clear();
+
+        foreach (var item in items)
+        {
+            collection.Add(item);
+        }
+    }
+
+    private sealed class NoOpMapDispatchService : IMapDispatchService
+    {
+        public Task<ElevatorTicketContext> LoadElevatorTicketContextAsync(Guid elevatorId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new ElevatorTicketContext(elevatorId, []));
+        }
+
+        public Task<MapAssignmentResult> AssignWorkerToTicketAsync(Guid ticketId, Guid workerId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new MapAssignmentResult(
+                Success: false,
+                TicketId: ticketId,
+                WorkerId: workerId,
+                StatusMessage: "Map dispatch service is not configured.",
+                ErrorMessage: "Map dispatch service is not configured."));
         }
     }
 }

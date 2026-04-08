@@ -137,6 +137,8 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="32"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- Legend -->
@@ -189,8 +191,45 @@
                 </StackPanel>
             </Border>
 
-            <!-- Map Guidance -->
+            <!-- Elevator Ticket Context -->
             <Border Grid.Row="4" Style="{StaticResource MapCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="Elevator Tickets" Style="{StaticResource SectionHeaderStyle}"/>
+                    <Separator Margin="0,0,0,16"/>
+
+                    <TextBlock Text="{Binding SelectedElevatorId, StringFormat='Selected elevator: {0}'}"
+                               Style="{StaticResource GuidanceTextStyle}"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="Select a ticket before assigning a worker from a drag-drop map action."
+                               Style="{StaticResource GuidanceTextStyle}"
+                               Margin="0,0,0,12"/>
+
+                    <ListBox ItemsSource="{Binding SelectedElevatorTickets}"
+                             SelectedValue="{Binding SelectedTicketId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             SelectedValuePath="TicketId"
+                             MinHeight="180"
+                             BorderBrush="#E2E8F0"
+                             BorderThickness="1">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,4">
+                                    <TextBlock Text="{Binding Description}" FontWeight="SemiBold" Foreground="#1E293B" TextWrapping="Wrap"/>
+                                    <TextBlock Foreground="#64748B" Margin="0,2,0,0">
+                                        <Run Text="{Binding Priority}"/>
+                                        <Run Text=" • "/>
+                                        <Run Text="{Binding Status}"/>
+                                        <Run Text=" • "/>
+                                        <Run Text="{Binding RequestedDate, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </Border>
+
+            <!-- Map Guidance -->
+            <Border Grid.Row="6" Style="{StaticResource MapCardStyle}">
                 <StackPanel>
                     <TextBlock Text="Map Guidance" Style="{StaticResource SectionHeaderStyle}"/>
                     <Separator Margin="0,0,0,16"/>
