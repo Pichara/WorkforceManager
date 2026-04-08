@@ -69,6 +69,13 @@
                 BorderThickness="1">
             <TabControl Background="Transparent"
                         BorderThickness="0">
+                <TabItem Header="Map">
+                    <Grid Margin="0"
+                          DataContext="{Binding MapManagement}">
+                        <views:MapView/>
+                    </Grid>
+                </TabItem>
+
                 <TabItem Header="Elevators">
                     <Grid Margin="0,14,0,0"
                           DataContext="{Binding ElevatorManagement}">
@@ -693,13 +700,6 @@
                                 </DataGrid>
                             </Grid>
                         </Border>
-                    </Grid>
-                </TabItem>
-
-                <TabItem Header="Map">
-                    <Grid Margin="0,14,0,0"
-                          DataContext="{Binding MapManagement}">
-                        <views:MapView/>
                     </Grid>
                 </TabItem>
 
