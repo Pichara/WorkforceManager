@@ -23,9 +23,9 @@ public class MapSettings
     public int DefaultZoom { get; set; } = 10;
 
     /// <summary>
-    /// Default base layer to display ("standard" or "satellite")
+    /// Default base layer to display ("satellite")
     /// </summary>
-    public string DefaultBaseLayer { get; set; } = "standard";
+    public string DefaultBaseLayer { get; set; } = "satellite";
 
     /// <summary>
     /// Standard (street) map tile configuration

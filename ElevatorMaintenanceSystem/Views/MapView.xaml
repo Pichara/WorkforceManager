@@ -11,8 +11,13 @@
         <Style x:Key="MapCardStyle" TargetType="Border">
             <Setter Property="Background" Value="White"/>
             <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="24"/>
+            <Setter Property="Padding" Value="20"/>
             <Setter Property="Margin" Value="0,0,0,24"/>
+        </Style>
+
+        <Style x:Key="RightRailCardStyle" TargetType="Border" BasedOn="{StaticResource MapCardStyle}">
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,14"/>
         </Style>
 
         <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
@@ -20,6 +25,11 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Foreground" Value="#17324D"/>
             <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <Style x:Key="CompactSectionHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource SectionHeaderStyle}">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
         <Style x:Key="HelperTextStyle" TargetType="TextBlock">
@@ -38,19 +48,26 @@
 
         <Style x:Key="LegendRowStyle" TargetType="StackPanel">
             <Setter Property="Orientation" Value="Horizontal"/>
-            <Setter Property="Margin" Value="0,8"/>
+            <Setter Property="Margin" Value="0,4"/>
         </Style>
 
         <Style x:Key="LegendDotStyle" TargetType="Ellipse">
-            <Setter Property="Width" Value="12"/>
-            <Setter Property="Height" Value="12"/>
-            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Height" Value="10"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
         </Style>
 
         <Style x:Key="LegendLabelStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontSize" Value="12"/>
             <Setter Property="Foreground" Value="#334155"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="SelectedItemMetaStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#334155"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
         <Style x:Key="DetailLabelStyle" TargetType="TextBlock">
@@ -95,9 +112,9 @@
 
     <Grid Margin="24,24,24,0">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2.2*"/>
-            <ColumnDefinition Width="24"/>
-            <ColumnDefinition Width="0.8*"/>
+            <ColumnDefinition Width="2.6*"/>
+            <ColumnDefinition Width="20"/>
+            <ColumnDefinition Width="0.75*"/>
         </Grid.ColumnDefinitions>
 
         <!-- Left Column: Map Canvas -->
@@ -130,153 +147,185 @@
         </Border>
 
         <!-- Right Rail -->
-        <Grid Grid.Column="2">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="32"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="32"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="32"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="32"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <!-- Legend -->
+                <Border Style="{StaticResource RightRailCardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Legend" Style="{StaticResource CompactSectionHeaderStyle}"/>
+                        <Separator Margin="0,0,0,10"/>
 
-            <!-- Legend -->
-            <Border Grid.Row="0" Style="{StaticResource MapCardStyle}">
-                <StackPanel>
-                    <TextBlock Text="Legend" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Separator Margin="0,0,0,16"/>
+                        <StackPanel Style="{StaticResource LegendRowStyle}">
+                            <Ellipse Style="{StaticResource LegendDotStyle}" Fill="#17324D" Stroke="#17324D" StrokeThickness="2"/>
+                            <TextBlock Text="Elevator" Style="{StaticResource LegendLabelStyle}"/>
+                        </StackPanel>
 
-                    <StackPanel Style="{StaticResource LegendRowStyle}">
-                        <Ellipse Style="{StaticResource LegendDotStyle}" Fill="#17324D" Stroke="#17324D" StrokeThickness="2"/>
-                        <TextBlock Text="Elevator" Style="{StaticResource LegendLabelStyle}"/>
+                        <StackPanel Style="{StaticResource LegendRowStyle}">
+                            <Ellipse Style="{StaticResource LegendDotStyle}" Fill="#2F855A" Stroke="#2F855A" StrokeThickness="2"/>
+                            <TextBlock Text="Available Worker" Style="{StaticResource LegendLabelStyle}"/>
+                        </StackPanel>
+
+                        <StackPanel Style="{StaticResource LegendRowStyle}">
+                            <Ellipse Style="{StaticResource LegendDotStyle}" Fill="#94A3B8" Stroke="#94A3B8" StrokeThickness="2"/>
+                            <TextBlock Text="Unavailable Worker" Style="{StaticResource LegendLabelStyle}"/>
+                        </StackPanel>
                     </StackPanel>
+                </Border>
 
-                    <StackPanel Style="{StaticResource LegendRowStyle}">
-                        <Ellipse Style="{StaticResource LegendDotStyle}" Fill="#2F855A" Stroke="#2F855A" StrokeThickness="2"/>
-                        <TextBlock Text="Available Worker" Style="{StaticResource LegendLabelStyle}"/>
+                <!-- Selected Item -->
+                <Border Style="{StaticResource RightRailCardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Selected Item" Style="{StaticResource CompactSectionHeaderStyle}"/>
+                        <Separator Margin="0,0,0,12"/>
+
+                        <ContentControl Content="{Binding SelectedItemTitle}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource CompactSectionHeaderStyle}" FontSize="15"/>
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
+
+                        <ContentControl Content="{Binding SelectedItemTitle}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ., Converter={StaticResource EmptyToPlaceholderConverter}, ConverterParameter='Click a marker to view details'}"
+                                               Style="{StaticResource GuidanceTextStyle}"
+                                               Margin="0,6,0,6"/>
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
+
+                        <TextBlock Text="Details" Style="{StaticResource GuidanceTitleStyle}" Margin="0,4,0,4"/>
+                        <ItemsControl ItemsSource="{Binding SelectedItemDetailLines}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource SelectedItemMetaStyle}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Separator Margin="0,8,0,10"/>
+
+                        <TextBlock Text="Active Tickets" Style="{StaticResource GuidanceTitleStyle}"/>
+                        <TextBlock Text="{Binding SelectedItemTicketSummary}" Style="{StaticResource GuidanceTextStyle}" Margin="0,0,0,8"/>
+
+                        <ItemsControl ItemsSource="{Binding SelectedItemTickets}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#F8FAFC"
+                                            BorderBrush="#E2E8F0"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="8"
+                                            Margin="0,0,0,6">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Description}" FontWeight="SemiBold" Foreground="#1E293B" TextWrapping="Wrap"/>
+                                            <TextBlock Foreground="#64748B" Margin="0,2,0,0">
+                                                <Run Text="{Binding Priority}"/>
+                                                <Run Text=" • "/>
+                                                <Run Text="{Binding Status}"/>
+                                                <Run Text=" • "/>
+                                                <Run Text="{Binding RequestedAt}"/>
+                                            </TextBlock>
+                                            <TextBlock Foreground="#64748B" Margin="0,2,0,0">
+                                                <Run Text="{Binding Assignment}"/>
+                                                <Run Text=" • Ticket: "/>
+                                                <Run Text="{Binding TicketId}"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
+                </Border>
 
-                    <StackPanel Style="{StaticResource LegendRowStyle}">
-                        <Ellipse Style="{StaticResource LegendDotStyle}" Fill="#94A3B8" Stroke="#94A3B8" StrokeThickness="2"/>
-                        <TextBlock Text="Unavailable Worker" Style="{StaticResource LegendLabelStyle}"/>
+                <!-- Elevator Ticket Context -->
+                <Border Style="{StaticResource RightRailCardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Elevator Tickets" Style="{StaticResource CompactSectionHeaderStyle}"/>
+                        <Separator Margin="0,0,0,12"/>
+
+                        <TextBlock Text="{Binding SelectedElevatorId, StringFormat='Selected elevator: {0}'}"
+                                   Style="{StaticResource GuidanceTextStyle}"
+                                   Margin="0,0,0,8"/>
+                        <TextBlock Text="Select a ticket before assigning a worker from a drag-drop map action."
+                                   Style="{StaticResource GuidanceTextStyle}"
+                                   Margin="0,0,0,10"/>
+
+                        <ListBox ItemsSource="{Binding SelectedElevatorTickets}"
+                                 SelectedValue="{Binding SelectedTicketId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 SelectedValuePath="TicketId"
+                                 MinHeight="150"
+                                 BorderBrush="#E2E8F0"
+                                 BorderThickness="1">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,4">
+                                        <TextBlock Text="{Binding Description}" FontWeight="SemiBold" Foreground="#1E293B" TextWrapping="Wrap"/>
+                                        <TextBlock Foreground="#64748B" Margin="0,2,0,0">
+                                            <Run Text="{Binding Priority}"/>
+                                            <Run Text=" • "/>
+                                            <Run Text="{Binding Status}"/>
+                                            <Run Text=" • "/>
+                                            <Run Text="{Binding RequestedDate, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </StackPanel>
-                </StackPanel>
-            </Border>
+                </Border>
 
-            <!-- Selected Item -->
-            <Border Grid.Row="2" Style="{StaticResource MapCardStyle}">
-                <StackPanel>
-                    <TextBlock Text="Selected Item" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Separator Margin="0,0,0,16"/>
+                <!-- Nearest Workers -->
+                <Border Style="{StaticResource RightRailCardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Nearest Workers" Style="{StaticResource CompactSectionHeaderStyle}"/>
+                        <Separator Margin="0,0,0,12"/>
 
-                    <ContentControl Content="{Binding SelectedItemTitle}">
-                        <ContentControl.ContentTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}" Style="{StaticResource SectionHeaderStyle}" FontSize="16"/>
-                            </DataTemplate>
-                        </ContentControl.ContentTemplate>
-                    </ContentControl>
+                        <TextBlock Text="Ranked suggestions for the selected ticket."
+                                   Style="{StaticResource GuidanceTextStyle}"
+                                   Margin="0,0,0,10"/>
 
-                    <ContentControl Content="{Binding SelectedItemTitle}">
-                        <ContentControl.ContentTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding ., Converter={StaticResource EmptyToPlaceholderConverter}, ConverterParameter='Click a marker to view details'}"
-                                           Style="{StaticResource HelperTextStyle}" Margin="0,8,0,0"/>
-                            </DataTemplate>
-                        </ContentControl.ContentTemplate>
-                    </ContentControl>
+                        <ListBox ItemsSource="{Binding WorkerSuggestions}"
+                                 MinHeight="150"
+                                 BorderBrush="#E2E8F0"
+                                 BorderThickness="1">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,4">
+                                        <TextBlock Foreground="#1E293B" FontWeight="SemiBold">
+                                            <Run Text="{Binding Rank}"/>
+                                            <Run Text=". "/>
+                                            <Run Text="{Binding DisplayName}"/>
+                                        </TextBlock>
+                                        <TextBlock Foreground="#64748B" Margin="0,2,0,0">
+                                            <Run Text="{Binding Availability}"/>
+                                            <Run Text=" • Distance: "/>
+                                            <Run Text="{Binding DistanceText}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
 
-                    <TextBlock Text="{Binding SelectedItemDetail}" Style="{StaticResource DetailValueStyle}" TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
+                <!-- Map Guidance -->
+                <Border Style="{StaticResource RightRailCardStyle}" Margin="0,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Map Guidance" Style="{StaticResource CompactSectionHeaderStyle}"/>
+                        <Separator Margin="0,0,0,12"/>
 
-            <!-- Elevator Ticket Context -->
-            <Border Grid.Row="4" Style="{StaticResource MapCardStyle}">
-                <StackPanel>
-                    <TextBlock Text="Elevator Tickets" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Separator Margin="0,0,0,16"/>
+                        <TextBlock Text="Default View" Style="{StaticResource GuidanceTitleStyle}"/>
+                        <TextBlock Text="Map opens centered on Waterloo/Kitchener, Ontario." Style="{StaticResource GuidanceTextStyle}" Margin="0,0,0,12"/>
 
-                    <TextBlock Text="{Binding SelectedElevatorId, StringFormat='Selected elevator: {0}'}"
-                               Style="{StaticResource GuidanceTextStyle}"
-                               Margin="0,0,0,8"/>
-                    <TextBlock Text="Select a ticket before assigning a worker from a drag-drop map action."
-                               Style="{StaticResource GuidanceTextStyle}"
-                               Margin="0,0,0,12"/>
-
-                    <ListBox ItemsSource="{Binding SelectedElevatorTickets}"
-                             SelectedValue="{Binding SelectedTicketId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             SelectedValuePath="TicketId"
-                             MinHeight="180"
-                             BorderBrush="#E2E8F0"
-                             BorderThickness="1">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Margin="0,4">
-                                    <TextBlock Text="{Binding Description}" FontWeight="SemiBold" Foreground="#1E293B" TextWrapping="Wrap"/>
-                                    <TextBlock Foreground="#64748B" Margin="0,2,0,0">
-                                        <Run Text="{Binding Priority}"/>
-                                        <Run Text=" • "/>
-                                        <Run Text="{Binding Status}"/>
-                                        <Run Text=" • "/>
-                                        <Run Text="{Binding RequestedDate, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"/>
-                                    </TextBlock>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </StackPanel>
-            </Border>
-
-            <!-- Nearest Workers -->
-            <Border Grid.Row="6" Style="{StaticResource MapCardStyle}">
-                <StackPanel>
-                    <TextBlock Text="Nearest Workers" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Separator Margin="0,0,0,16"/>
-
-                    <TextBlock Text="Ranked suggestions for the selected ticket."
-                               Style="{StaticResource GuidanceTextStyle}"
-                               Margin="0,0,0,12"/>
-
-                    <ListBox ItemsSource="{Binding WorkerSuggestions}"
-                             MinHeight="180"
-                             BorderBrush="#E2E8F0"
-                             BorderThickness="1">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Margin="0,4">
-                                    <TextBlock Foreground="#1E293B" FontWeight="SemiBold">
-                                        <Run Text="{Binding Rank}"/>
-                                        <Run Text=". "/>
-                                        <Run Text="{Binding DisplayName}"/>
-                                    </TextBlock>
-                                    <TextBlock Foreground="#64748B" Margin="0,2,0,0">
-                                        <Run Text="{Binding Availability}"/>
-                                        <Run Text=" • Distance: "/>
-                                        <Run Text="{Binding DistanceText}"/>
-                                    </TextBlock>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </StackPanel>
-            </Border>
-
-            <!-- Map Guidance -->
-            <Border Grid.Row="8" Style="{StaticResource MapCardStyle}">
-                <StackPanel>
-                    <TextBlock Text="Map Guidance" Style="{StaticResource SectionHeaderStyle}"/>
-                    <Separator Margin="0,0,0,16"/>
-
-                    <TextBlock Text="Default View" Style="{StaticResource GuidanceTitleStyle}"/>
-                    <TextBlock Text="Map opens centered on Waterloo/Kitchener, Ontario." Style="{StaticResource GuidanceTextStyle}" Margin="0,0,0,16"/>
-
-                    <TextBlock Text="Refresh" Style="{StaticResource GuidanceTitleStyle}"/>
-                    <TextBlock Text="Select Refresh Map to update elevator and worker data. Current zoom and layer are preserved." Style="{StaticResource GuidanceTextStyle}"/>
-                </StackPanel>
-            </Border>
-        </Grid>
+                        <TextBlock Text="Refresh" Style="{StaticResource GuidanceTitleStyle}"/>
+                        <TextBlock Text="Select Refresh Map to update elevator and worker data. Current zoom and layer are preserved." Style="{StaticResource GuidanceTextStyle}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>

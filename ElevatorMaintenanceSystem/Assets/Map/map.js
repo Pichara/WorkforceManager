@@ -1,8 +1,6 @@
 let map = null;
 let markerEntries = [];
 let currentPopupEntry = null;
-let layerControl = null;
-let standardLayer = null;
 let satelliteLayer = null;
 
 const DROP_TARGET_RADIUS_PX = 24;
@@ -87,8 +85,6 @@ function initializeMap() {
     map.on('moveend', onMapMoved);
     map.on('zoomend', onMapMoved);
     map.on('click', onMapBackgroundClick);
-    map.on('baselayerchange', onBaseLayerChanged);
-
     postMessage({ type: 'mapReady' });
 }
 
@@ -138,42 +134,14 @@ function updateBaseLayers(data) {
         return;
     }
 
-    if (layerControl) {
-        map.removeControl(layerControl);
-        layerControl = null;
-    }
-
-    if (standardLayer) {
-        map.removeLayer(standardLayer);
-        standardLayer = null;
-    }
-
     if (satelliteLayer) {
         map.removeLayer(satelliteLayer);
         satelliteLayer = null;
     }
 
-    standardLayer = createTileLayer(data.standardTiles);
     satelliteLayer = createTileLayer(data.satelliteTiles);
 
-    if (standardLayer && satelliteLayer) {
-        layerControl = L.control.layers(
-            {
-                'Standard': standardLayer,
-                'Satellite': satelliteLayer
-            },
-            null,
-            { position: 'topright' });
-        layerControl.addTo(map);
-
-        if (data.defaultBaseLayer === 'satellite') {
-            satelliteLayer.addTo(map);
-        } else {
-            standardLayer.addTo(map);
-        }
-    } else if (standardLayer) {
-        standardLayer.addTo(map);
-    } else if (satelliteLayer) {
+    if (satelliteLayer) {
         satelliteLayer.addTo(map);
     }
 }
@@ -488,18 +456,6 @@ function onMapMoved() {
         lat: center.lat,
         lng: center.lng,
         zoom: map.getZoom()
-    });
-}
-
-function onBaseLayerChanged(event) {
-    if (!event || !event.layer) {
-        return;
-    }
-
-    const selectedLayer = event.layer === satelliteLayer ? 'satellite' : 'standard';
-    postMessage({
-        type: 'baseLayerChanged',
-        layer: selectedLayer
     });
 }
 

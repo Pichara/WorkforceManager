@@ -25,7 +25,7 @@ public class MapViewModelTests
             DefaultCenterLatitude = 43.4516,
             DefaultCenterLongitude = -80.4925,
             DefaultZoom = 10,
-            DefaultBaseLayer = "standard"
+            DefaultBaseLayer = "satellite"
         };
     }
 
@@ -46,7 +46,7 @@ public class MapViewModelTests
         Assert.Equal(43.4516, viewModel.CurrentCenterLatitude);
         Assert.Equal(-80.4925, viewModel.CurrentCenterLongitude);
         Assert.Equal(10, viewModel.CurrentZoom);
-        Assert.Equal("standard", viewModel.SelectedBaseLayer);
+        Assert.Equal("satellite", viewModel.SelectedBaseLayer);
         Assert.Equal("Map loaded.", viewModel.StatusMessage);
         Assert.False(string.IsNullOrEmpty(viewModel.LastSnapshotJson));
     }

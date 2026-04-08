@@ -5,6 +5,7 @@ using ElevatorMaintenanceSystem.Models;
 using ElevatorMaintenanceSystem.Services;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text.Json;
 
 namespace ElevatorMaintenanceSystem.ViewModels;
@@ -21,6 +22,8 @@ public partial class MapViewModel : ViewModelBase
     private readonly ILogger<MapViewModel> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
     private IReadOnlyList<MapMarkerSnapshot> _latestMarkers = [];
+    private readonly List<string> _selectedItemBaseDetailLines = [];
+    private string _selectedMarkerKind = string.Empty;
 
     [ObservableProperty]
     private string _statusMessage = "Ready.";
@@ -36,6 +39,9 @@ public partial class MapViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _selectedItemDetail = string.Empty;
+
+    [ObservableProperty]
+    private string _selectedItemTicketSummary = "Select an elevator marker to view active ticket details.";
 
     [ObservableProperty]
     private Guid? _selectedElevatorId;
@@ -63,6 +69,8 @@ public partial class MapViewModel : ViewModelBase
 
     public ObservableCollection<ElevatorTicketSummary> SelectedElevatorTickets { get; } = [];
     public ObservableCollection<WorkerSuggestionRow> WorkerSuggestions { get; } = [];
+    public ObservableCollection<string> SelectedItemDetailLines { get; } = [];
+    public ObservableCollection<SelectedItemTicketRow> SelectedItemTickets { get; } = [];
 
     public AsyncRelayCommand RefreshMapCommand { get; }
 
@@ -200,10 +208,13 @@ public partial class MapViewModel : ViewModelBase
     /// <summary>
     /// Set the selected item from a marker click
     /// </summary>
-    public void SetSelectedItem(string title, string detail)
+    public void SetSelectedItem(string title, string detail, string? markerKind = null)
     {
         SelectedItemTitle = title;
-        SelectedItemDetail = detail;
+        _selectedMarkerKind = markerKind ?? string.Empty;
+
+        ReplaceSelectionDetails(SplitDetailLines(detail));
+        RefreshSelectedItemTicketContext();
     }
 
     /// <summary>
@@ -213,6 +224,11 @@ public partial class MapViewModel : ViewModelBase
     {
         SelectedItemTitle = string.Empty;
         SelectedItemDetail = string.Empty;
+        _selectedMarkerKind = string.Empty;
+        _selectedItemBaseDetailLines.Clear();
+        ReplaceCollection(SelectedItemDetailLines, []);
+        ReplaceCollection(SelectedItemTickets, []);
+        SelectedItemTicketSummary = "Select an elevator marker to view active ticket details.";
     }
 
     public async Task HandleElevatorFocusedAsync(
@@ -229,12 +245,14 @@ public partial class MapViewModel : ViewModelBase
 
             SelectedElevatorId = context.ElevatorId;
             ReplaceCollection(SelectedElevatorTickets, context.ActiveTickets);
+            _selectedMarkerKind = "elevator";
 
             if (SelectedTicketId.HasValue && !SelectedElevatorTickets.Any(ticket => ticket.TicketId == SelectedTicketId.Value))
             {
                 SelectedTicketId = null;
             }
             RefreshWorkerSuggestions();
+            RefreshSelectedItemTicketContext();
 
             if (!string.IsNullOrWhiteSpace(elevatorTitle))
             {
@@ -282,12 +300,14 @@ public partial class MapViewModel : ViewModelBase
             var refreshedContext = await _mapDispatchService.LoadElevatorTicketContextAsync(elevatorId, cancellationToken);
             SelectedElevatorId = refreshedContext.ElevatorId;
             ReplaceCollection(SelectedElevatorTickets, refreshedContext.ActiveTickets);
+            _selectedMarkerKind = "elevator";
 
             if (!SelectedElevatorTickets.Any(ticket => ticket.TicketId == assignmentResult.TicketId))
             {
                 SelectedTicketId = null;
             }
             RefreshWorkerSuggestions();
+            RefreshSelectedItemTicketContext();
 
             if (!string.IsNullOrWhiteSpace(elevatorTitle))
             {
@@ -296,7 +316,7 @@ public partial class MapViewModel : ViewModelBase
 
             if (!string.IsNullOrWhiteSpace(workerTitle))
             {
-                SelectedItemDetail = $"Assigned worker: {workerTitle}";
+                ReplaceSelectionDetails([$"Assigned worker: {workerTitle}"]);
             }
 
             MapErrorMessage = string.Empty;
@@ -358,6 +378,59 @@ public partial class MapViewModel : ViewModelBase
             suggestion.DistanceKm));
 
         ReplaceCollection(WorkerSuggestions, rows);
+    }
+
+    private void RefreshSelectedItemTicketContext()
+    {
+        if (!string.Equals(_selectedMarkerKind, "elevator", StringComparison.OrdinalIgnoreCase))
+        {
+            ReplaceCollection(SelectedItemTickets, []);
+            SelectedItemTicketSummary = "Select an elevator marker to view active ticket details.";
+            return;
+        }
+
+        var ticketRows = SelectedElevatorTickets
+            .OrderByDescending(ticket => ticket.Priority)
+            .ThenBy(ticket => ticket.RequestedDate)
+            .ThenBy(ticket => ticket.TicketId)
+            .Select(ticket => new SelectedItemTicketRow(
+                ticket.TicketId,
+                ticket.Description,
+                ticket.Priority.ToString(),
+                ticket.Status.ToString(),
+                ticket.RequestedDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
+                ticket.AssignedWorkerId.HasValue ? $"Assigned ({ticket.AssignedWorkerId.Value.ToString("N")[..8]})" : "Unassigned"))
+            .ToList();
+
+        ReplaceCollection(SelectedItemTickets, ticketRows);
+        SelectedItemTicketSummary = ticketRows.Count == 0
+            ? "No active tickets for this elevator."
+            : $"{ticketRows.Count} active ticket(s) linked to this elevator.";
+    }
+
+    private void ReplaceSelectionDetails(IReadOnlyList<string> detailLines)
+    {
+        _selectedItemBaseDetailLines.Clear();
+        _selectedItemBaseDetailLines.AddRange(detailLines);
+
+        ReplaceCollection(SelectedItemDetailLines, _selectedItemBaseDetailLines);
+        SelectedItemDetail = string.Join("\n", _selectedItemBaseDetailLines);
+    }
+
+    private static IReadOnlyList<string> SplitDetailLines(string detail)
+    {
+        if (string.IsNullOrWhiteSpace(detail))
+        {
+            return [];
+        }
+
+        var lines = detail
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim())
+            .Where(line => line.Length > 0)
+            .ToList();
+
+        return lines.Count == 0 ? [detail.Trim()] : lines;
     }
 
     private static WorkerProximityCandidate? CreateWorkerCandidate(MapMarkerSnapshot marker)
@@ -428,6 +501,14 @@ public partial class MapViewModel : ViewModelBase
         string DistanceText,
         Guid WorkerId,
         double DistanceKm);
+
+    public sealed record SelectedItemTicketRow(
+        Guid TicketId,
+        string Description,
+        string Priority,
+        string Status,
+        string RequestedAt,
+        string Assignment);
 
     private sealed class NoOpMapDispatchService : IMapDispatchService
     {

@@ -141,7 +141,8 @@ public partial class MapView : UserControl
                         {
                             _viewModel.SetSelectedItem(
                                 title.GetString() ?? string.Empty,
-                                detail.GetString() ?? string.Empty);
+                                detail.GetString() ?? string.Empty,
+                                GetString(message, "kind"));
                         }
                         break;
 

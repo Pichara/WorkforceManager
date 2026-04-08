@@ -173,7 +173,7 @@ public class MapViewModelDispatchTests
             DefaultCenterLatitude = 43.4516,
             DefaultCenterLongitude = -80.4925,
             DefaultZoom = 10,
-            DefaultBaseLayer = "standard"
+            DefaultBaseLayer = "satellite"
         };
 
         var rankingService = proximityService ?? new StubProximityRankingService();
