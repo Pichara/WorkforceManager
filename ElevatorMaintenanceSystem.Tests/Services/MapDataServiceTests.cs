@@ -389,7 +389,7 @@ public class MapDataServiceTests
         var elevatorRepo = new FakeElevatorRepository();
         var workerRepo = new FakeWorkerRepository();
         var ticketService = new FakeTicketService();
-        var service = new MapDataService(elevatorRepo, workerRepo, settings);
+        var service = new MapDataService(elevatorRepo, workerRepo, ticketService, settings);
 
         return new MapDataServiceFixture(service, elevatorRepo, workerRepo, ticketService, settings);
     }

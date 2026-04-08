@@ -12,15 +12,18 @@ public class MapDataService : IMapDataService
 {
     private readonly IElevatorRepository _elevatorRepository;
     private readonly IWorkerRepository _workerRepository;
+    private readonly ITicketService _ticketService;
     private readonly MapSettings _settings;
 
     public MapDataService(
         IElevatorRepository elevatorRepository,
         IWorkerRepository workerRepository,
+        ITicketService ticketService,
         MapSettings settings)
     {
         _elevatorRepository = elevatorRepository;
         _workerRepository = workerRepository;
+        _ticketService = ticketService;
         _settings = settings;
     }
 
@@ -36,6 +39,14 @@ public class MapDataService : IMapDataService
 
         var activeWorkerFilter = Builders<Worker>.Filter.Eq(w => w.DeletedAt, null);
         var workers = await _workerRepository.FindAsync(activeWorkerFilter);
+
+        var activeTickets = await _ticketService.GetActiveAsync();
+        var assignedWorkerIds = activeTickets
+            .Where(t =>
+                t.AssignedWorkerId.HasValue &&
+                (t.Status == TicketStatus.Assigned || t.Status == TicketStatus.InProgress))
+            .Select(t => t.AssignedWorkerId!.Value)
+            .ToHashSet();
 
         var markers = new List<MapMarkerSnapshot>();
 
@@ -55,11 +66,17 @@ public class MapDataService : IMapDataService
         }
 
         // Project workers into MAP-02 markers (MAP-02: AvailableWorker vs UnavailableWorker)
+        // and MAP-07 assigned-state variants.
         foreach (var worker in workers.Where(w => w.Location != null && w.Location.Coordinates != null))
         {
-            var markerKind = worker.AvailabilityStatus == WorkerAvailabilityStatus.Available
-                ? MapMarkerKind.AvailableWorker
-                : MapMarkerKind.UnavailableWorker;
+            var isAssigned = assignedWorkerIds.Contains(worker.Id);
+            var markerKind = worker.AvailabilityStatus switch
+            {
+                WorkerAvailabilityStatus.Available when isAssigned => MapMarkerKind.AssignedAvailableWorker,
+                WorkerAvailabilityStatus.Unavailable when isAssigned => MapMarkerKind.AssignedUnavailableWorker,
+                WorkerAvailabilityStatus.Available => MapMarkerKind.AvailableWorker,
+                _ => MapMarkerKind.UnavailableWorker
+            };
 
             // Take top three skills for popup
             var topSkills = worker.Skills.Take(3).ToList();

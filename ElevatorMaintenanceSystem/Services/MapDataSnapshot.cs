@@ -16,9 +16,19 @@ public enum MapMarkerKind
     AvailableWorker,
 
     /// <summary>
+    /// Worker with Available status and active ticket assignment
+    /// </summary>
+    AssignedAvailableWorker,
+
+    /// <summary>
     /// Worker with Unavailable status
     /// </summary>
-    UnavailableWorker
+    UnavailableWorker,
+
+    /// <summary>
+    /// Worker with Unavailable status and active ticket assignment
+    /// </summary>
+    AssignedUnavailableWorker
 }
 
 /// <summary>
