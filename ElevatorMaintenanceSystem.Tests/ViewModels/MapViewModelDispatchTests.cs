@@ -10,6 +10,26 @@ namespace ElevatorMaintenanceSystem.Tests.ViewModels;
 public class MapViewModelDispatchTests
 {
     [Fact]
+    public void MAP_05_D_01_BridgeIntentContract_HandleWorkerDroppedOnElevatorAsync_ExposesWorkerAndElevatorIdentifiers()
+    {
+        var method = typeof(MapViewModel).GetMethod(
+            "HandleWorkerDroppedOnElevatorAsync",
+            [typeof(Guid), typeof(Guid), typeof(string), typeof(string), typeof(CancellationToken)]);
+
+        Assert.NotNull(method);
+    }
+
+    [Fact]
+    public void MAP_06_D_03_BridgeIntentContract_HandleElevatorFocusedAsync_ExposesElevatorIdentifierAndTitleMetadata()
+    {
+        var method = typeof(MapViewModel).GetMethod(
+            "HandleElevatorFocusedAsync",
+            [typeof(Guid), typeof(string), typeof(CancellationToken)]);
+
+        Assert.NotNull(method);
+    }
+
+    [Fact]
     public async Task MAP_05_D_01_D_02_HandleWorkerDroppedOnElevatorAsync_WithoutSelectedTicket_ShowsUserErrorStatusAndSkipsAssignment()
     {
         var dispatchService = new StubMapDispatchService();
