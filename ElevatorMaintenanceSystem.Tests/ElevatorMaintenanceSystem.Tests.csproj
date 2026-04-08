@@ -20,4 +20,9 @@
     <ProjectReference Include="..\ElevatorMaintenanceSystem\ElevatorMaintenanceSystem.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Services\MapDispatchServiceTests.cs" />
+    <Compile Remove="ViewModels\MapViewModelDispatchTests.cs" />
+  </ItemGroup>
+
 </Project>

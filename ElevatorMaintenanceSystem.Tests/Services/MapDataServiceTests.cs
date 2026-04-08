@@ -395,6 +395,7 @@ public class MapDataServiceTests
         private readonly List<Elevator> _items = [];
 
         public IReadOnlyList<Elevator> Items => _items;
+        public void Add(Elevator entity) => _items.Add(entity);
 
         public Task<Elevator?> GetByIdAsync(Guid id) => Task.FromResult(_items.FirstOrDefault(e => e.Id == id));
         public Task<IEnumerable<Elevator>> GetAllAsync() => Task.FromResult<IEnumerable<Elevator>>(_items);
@@ -433,6 +434,7 @@ public class MapDataServiceTests
         private readonly List<Worker> _items = [];
 
         public IReadOnlyList<Worker> Items => _items;
+        public void Add(Worker entity) => _items.Add(entity);
 
         public Task<Worker?> GetByIdAsync(Guid id) => Task.FromResult(_items.FirstOrDefault(w => w.Id == id));
         public Task<IEnumerable<Worker>> GetAllAsync() => Task.FromResult<IEnumerable<Worker>>(_items);
