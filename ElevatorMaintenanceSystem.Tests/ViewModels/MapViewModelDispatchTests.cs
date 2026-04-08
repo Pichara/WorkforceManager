@@ -89,7 +89,7 @@ public class MapViewModelDispatchTests
         Assert.Equal("Worker B", GetStringProperty(suggestions[0], "DisplayName", "WorkerName"));
         Assert.Equal("Worker A", GetStringProperty(suggestions[1], "DisplayName", "WorkerName"));
         Assert.Contains("km", GetStringProperty(suggestions[0], "DistanceText"));
-        Assert.True(proximityService.Requests.Any(r => r.SelectedTicketId == ticketId));
+        Assert.Contains(proximityService.Requests, request => request.SelectedTicketId == ticketId);
     }
 
     [Fact]

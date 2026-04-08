@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ElevatorMaintenanceSystem.Infrastructure;
 using ElevatorMaintenanceSystem.Infrastructure.Commands;
+using ElevatorMaintenanceSystem.Models;
 using ElevatorMaintenanceSystem.Services;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
@@ -15,9 +16,11 @@ public partial class MapViewModel : ViewModelBase
 {
     private readonly IMapDataService _mapDataService;
     private readonly IMapDispatchService _mapDispatchService;
+    private readonly IProximityRankingService _proximityRankingService;
     private readonly MapSettings _mapSettings;
     private readonly ILogger<MapViewModel> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
+    private IReadOnlyList<MapMarkerSnapshot> _latestMarkers = [];
 
     [ObservableProperty]
     private string _statusMessage = "Ready.";
@@ -59,6 +62,7 @@ public partial class MapViewModel : ViewModelBase
     private string _mapErrorMessage = string.Empty;
 
     public ObservableCollection<ElevatorTicketSummary> SelectedElevatorTickets { get; } = [];
+    public ObservableCollection<WorkerSuggestionRow> WorkerSuggestions { get; } = [];
 
     public AsyncRelayCommand RefreshMapCommand { get; }
 
@@ -66,7 +70,7 @@ public partial class MapViewModel : ViewModelBase
         IMapDataService mapDataService,
         MapSettings mapSettings,
         ILogger<MapViewModel> logger)
-        : this(mapDataService, mapSettings, new NoOpMapDispatchService(), logger)
+        : this(mapDataService, mapSettings, new NoOpMapDispatchService(), new NoOpProximityRankingService(), logger)
     {
     }
 
@@ -75,10 +79,21 @@ public partial class MapViewModel : ViewModelBase
         MapSettings mapSettings,
         IMapDispatchService mapDispatchService,
         ILogger<MapViewModel> logger)
+        : this(mapDataService, mapSettings, mapDispatchService, new NoOpProximityRankingService(), logger)
+    {
+    }
+
+    public MapViewModel(
+        IMapDataService mapDataService,
+        MapSettings mapSettings,
+        IMapDispatchService mapDispatchService,
+        IProximityRankingService proximityRankingService,
+        ILogger<MapViewModel> logger)
     {
         _mapDataService = mapDataService ?? throw new ArgumentNullException(nameof(mapDataService));
         _mapSettings = mapSettings ?? throw new ArgumentNullException(nameof(mapSettings));
         _mapDispatchService = mapDispatchService ?? throw new ArgumentNullException(nameof(mapDispatchService));
+        _proximityRankingService = proximityRankingService ?? throw new ArgumentNullException(nameof(proximityRankingService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _jsonOptions = new JsonSerializerOptions
@@ -97,6 +112,7 @@ public partial class MapViewModel : ViewModelBase
     }
 
     partial void OnIsBusyChanged(bool value) => RefreshMapCommand.RaiseCanExecuteChanged();
+    partial void OnSelectedTicketIdChanged(Guid? value) => RefreshWorkerSuggestions();
 
     /// <summary>
     /// Load the map for the first time using Waterloo/Kitchener defaults
@@ -126,6 +142,8 @@ public partial class MapViewModel : ViewModelBase
                 standardTiles = snapshot.StandardTiles,
                 satelliteTiles = snapshot.SatelliteTiles
             }, _jsonOptions);
+            _latestMarkers = snapshot.Markers;
+            RefreshWorkerSuggestions();
 
             IsInitialized = true;
             StatusMessage = "Map loaded.";
@@ -161,6 +179,8 @@ public partial class MapViewModel : ViewModelBase
                 standardTiles = snapshot.StandardTiles,
                 satelliteTiles = snapshot.SatelliteTiles
             }, _jsonOptions);
+            _latestMarkers = snapshot.Markers;
+            RefreshWorkerSuggestions();
 
             StatusMessage = "Map refreshed.";
         }, "Refreshing map data failed.");
@@ -211,6 +231,7 @@ public partial class MapViewModel : ViewModelBase
             {
                 SelectedTicketId = null;
             }
+            RefreshWorkerSuggestions();
 
             StatusMessage = SelectedElevatorTickets.Count == 0
                 ? "No active tickets found for the selected elevator."
@@ -253,10 +274,99 @@ public partial class MapViewModel : ViewModelBase
             {
                 SelectedTicketId = null;
             }
+            RefreshWorkerSuggestions();
 
             MapErrorMessage = string.Empty;
             StatusMessage = assignmentResult.StatusMessage;
         }, "Assigning worker from map drop failed.");
+    }
+
+    private void RefreshWorkerSuggestions()
+    {
+        if (!SelectedTicketId.HasValue || !SelectedElevatorId.HasValue)
+        {
+            ReplaceCollection(WorkerSuggestions, []);
+            return;
+        }
+
+        if (!SelectedElevatorTickets.Any(ticket => ticket.TicketId == SelectedTicketId.Value))
+        {
+            ReplaceCollection(WorkerSuggestions, []);
+            return;
+        }
+
+        var elevatorIdText = SelectedElevatorId.Value.ToString();
+        var elevatorMarker = _latestMarkers.FirstOrDefault(marker =>
+            marker.Kind == MapMarkerKind.Elevator &&
+            string.Equals(marker.Id, elevatorIdText, StringComparison.OrdinalIgnoreCase));
+
+        if (elevatorMarker is null)
+        {
+            ReplaceCollection(WorkerSuggestions, []);
+            return;
+        }
+
+        var candidates = _latestMarkers
+            .Select(CreateWorkerCandidate)
+            .Where(candidate => candidate != null)
+            .Cast<WorkerProximityCandidate>()
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            ReplaceCollection(WorkerSuggestions, []);
+            return;
+        }
+
+        var rankedSuggestions = _proximityRankingService.RankWorkers(
+            new ProximityRankRequest(
+                SelectedTicketId.Value,
+                SelectedElevatorId.Value,
+                elevatorMarker.Latitude,
+                elevatorMarker.Longitude,
+                candidates));
+
+        var rows = rankedSuggestions.Select(suggestion => new WorkerSuggestionRow(
+            suggestion.Rank,
+            suggestion.DisplayName,
+            ToAvailabilityLabel(suggestion.Availability),
+            $"{suggestion.DistanceKm:F2} km",
+            suggestion.WorkerId,
+            suggestion.DistanceKm));
+
+        ReplaceCollection(WorkerSuggestions, rows);
+    }
+
+    private static WorkerProximityCandidate? CreateWorkerCandidate(MapMarkerSnapshot marker)
+    {
+        if (!Guid.TryParse(marker.Id, out var workerId))
+        {
+            return null;
+        }
+
+        var availability = marker.Kind switch
+        {
+            MapMarkerKind.AvailableWorker or MapMarkerKind.AssignedAvailableWorker => WorkerAvailabilityStatus.Available,
+            MapMarkerKind.UnavailableWorker or MapMarkerKind.AssignedUnavailableWorker => WorkerAvailabilityStatus.Unavailable,
+            _ => (WorkerAvailabilityStatus?)null
+        };
+
+        if (availability is null)
+        {
+            return null;
+        }
+
+        return new WorkerProximityCandidate(
+            workerId,
+            marker.Title,
+            availability.Value,
+            marker.Latitude,
+            marker.Longitude);
+    }
+
+    private static string ToAvailabilityLabel(WorkerAvailabilityStatus availability)
+    {
+        return availability == WorkerAvailabilityStatus.Available ? "Available" : "Unavailable";
     }
 
     private async Task RunBusyOperationAsync(Func<Task> action, string failureMessage)
@@ -288,6 +398,14 @@ public partial class MapViewModel : ViewModelBase
         }
     }
 
+    public sealed record WorkerSuggestionRow(
+        int Rank,
+        string DisplayName,
+        string Availability,
+        string DistanceText,
+        Guid WorkerId,
+        double DistanceKm);
+
     private sealed class NoOpMapDispatchService : IMapDispatchService
     {
         public Task<ElevatorTicketContext> LoadElevatorTicketContextAsync(Guid elevatorId, CancellationToken cancellationToken = default)
@@ -303,6 +421,14 @@ public partial class MapViewModel : ViewModelBase
                 WorkerId: workerId,
                 StatusMessage: "Map dispatch service is not configured.",
                 ErrorMessage: "Map dispatch service is not configured."));
+        }
+    }
+
+    private sealed class NoOpProximityRankingService : IProximityRankingService
+    {
+        public IReadOnlyList<WorkerProximitySuggestion> RankWorkers(ProximityRankRequest request, int maxResults = 10)
+        {
+            return [];
         }
     }
 }

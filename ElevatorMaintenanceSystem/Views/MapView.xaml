@@ -139,6 +139,8 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="32"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- Legend -->
@@ -228,8 +230,42 @@
                 </StackPanel>
             </Border>
 
-            <!-- Map Guidance -->
+            <!-- Nearest Workers -->
             <Border Grid.Row="6" Style="{StaticResource MapCardStyle}">
+                <StackPanel>
+                    <TextBlock Text="Nearest Workers" Style="{StaticResource SectionHeaderStyle}"/>
+                    <Separator Margin="0,0,0,16"/>
+
+                    <TextBlock Text="Ranked suggestions for the selected ticket."
+                               Style="{StaticResource GuidanceTextStyle}"
+                               Margin="0,0,0,12"/>
+
+                    <ListBox ItemsSource="{Binding WorkerSuggestions}"
+                             MinHeight="180"
+                             BorderBrush="#E2E8F0"
+                             BorderThickness="1">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,4">
+                                    <TextBlock Foreground="#1E293B" FontWeight="SemiBold">
+                                        <Run Text="{Binding Rank}"/>
+                                        <Run Text=". "/>
+                                        <Run Text="{Binding DisplayName}"/>
+                                    </TextBlock>
+                                    <TextBlock Foreground="#64748B" Margin="0,2,0,0">
+                                        <Run Text="{Binding Availability}"/>
+                                        <Run Text=" • Distance: "/>
+                                        <Run Text="{Binding DistanceText}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </Border>
+
+            <!-- Map Guidance -->
+            <Border Grid.Row="8" Style="{StaticResource MapCardStyle}">
                 <StackPanel>
                     <TextBlock Text="Map Guidance" Style="{StaticResource SectionHeaderStyle}"/>
                     <Separator Margin="0,0,0,16"/>

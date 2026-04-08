@@ -98,6 +98,7 @@ public static class ServiceCollectionExtensions
         // Register map services
         services.AddScoped<IMapDataService, MapDataService>();
         services.AddScoped<IMapDispatchService, MapDispatchService>();
+        services.AddScoped<IProximityRankingService, ProximityRankingService>();
 
         return services;
     }
