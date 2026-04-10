@@ -1,9 +1,14 @@
 let map = null;
 let markerEntries = [];
 let currentPopupEntry = null;
+let standardLayer = null;
 let satelliteLayer = null;
+let baseLayerControl = null;
+let currentBaseLayerName = 'standard';
+let layoutRefreshToken = 0;
 
 const DROP_TARGET_RADIUS_PX = 24;
+const LAYOUT_REFRESH_DELAYS_MS = [0, 80, 180];
 
 const MARKER_STYLES = {
     elevator: {
@@ -72,6 +77,10 @@ window.chrome?.webview?.addEventListener('message', function (event) {
     }
 });
 
+window.codexHostRefreshMap = function () {
+    requestMapLayoutRefresh();
+};
+
 function initializeMap() {
     map = L.map('map', {
         preferCanvas: true,
@@ -85,7 +94,10 @@ function initializeMap() {
     map.on('moveend', onMapMoved);
     map.on('zoomend', onMapMoved);
     map.on('click', onMapBackgroundClick);
+    map.on('baselayerchange', onBaseLayerChanged);
+
     postMessage({ type: 'mapReady' });
+    requestMapLayoutRefresh();
 }
 
 function parseHostMessage(rawData) {
@@ -127,6 +139,8 @@ function updateMapData(data) {
     if (isFiniteNumber(data.centerLat) && isFiniteNumber(data.centerLng) && Number.isInteger(data.zoom)) {
         map.setView([data.centerLat, data.centerLng], data.zoom, { animate: false });
     }
+
+    requestMapLayoutRefresh();
 }
 
 function updateBaseLayers(data) {
@@ -134,16 +148,43 @@ function updateBaseLayers(data) {
         return;
     }
 
+    if (baseLayerControl) {
+        map.removeControl(baseLayerControl);
+        baseLayerControl = null;
+    }
+
+    if (standardLayer) {
+        map.removeLayer(standardLayer);
+        standardLayer = null;
+    }
+
     if (satelliteLayer) {
         map.removeLayer(satelliteLayer);
         satelliteLayer = null;
     }
 
-    satelliteLayer = createTileLayer(data.satelliteTiles);
+    standardLayer = createTileLayer(data?.standardTiles);
+    satelliteLayer = createTileLayer(data?.satelliteTiles);
+
+    const baseLayers = {};
+
+    if (standardLayer) {
+        baseLayers.Standard = standardLayer;
+    }
 
     if (satelliteLayer) {
-        satelliteLayer.addTo(map);
+        baseLayers.Satellite = satelliteLayer;
     }
+
+    if (Object.keys(baseLayers).length > 1) {
+        baseLayerControl = L.control.layers(baseLayers, null, {
+            position: 'topright',
+            collapsed: false
+        });
+        baseLayerControl.addTo(map);
+    }
+
+    applyBaseLayerSelection(data?.defaultBaseLayer, false);
 }
 
 function createTileLayer(tileSettings) {
@@ -459,6 +500,20 @@ function onMapMoved() {
     });
 }
 
+function onBaseLayerChanged(event) {
+    if (!map) {
+        return;
+    }
+
+    currentBaseLayerName = event?.layer === satelliteLayer ? 'satellite' : 'standard';
+    postMessage({
+        type: 'baseLayerChanged',
+        layer: currentBaseLayerName
+    });
+
+    requestMapLayoutRefresh();
+}
+
 function onMapBackgroundClick() {
     if (currentPopupEntry && currentPopupEntry.marker) {
         currentPopupEntry.marker.closePopup();
@@ -483,6 +538,91 @@ function clearMarkers() {
 
     markerEntries = [];
     currentPopupEntry = null;
+}
+
+function requestMapLayoutRefresh() {
+    if (!map) {
+        return;
+    }
+
+    const requestId = ++layoutRefreshToken;
+
+    for (const delayMs of LAYOUT_REFRESH_DELAYS_MS) {
+        scheduleLayoutRefreshAttempt(requestId, delayMs);
+    }
+}
+
+function scheduleLayoutRefreshAttempt(requestId, delayMs) {
+    window.setTimeout(function () {
+        window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(function () {
+                if (requestId !== layoutRefreshToken || !map || !hasMeasuredMapSurface()) {
+                    return;
+                }
+
+                map.invalidateSize(false);
+            });
+        });
+    }, delayMs);
+}
+
+function hasMeasuredMapSurface() {
+    if (!map || !map.getContainer) {
+        return false;
+    }
+
+    const container = map.getContainer();
+    return !!container && container.clientWidth > 1 && container.clientHeight > 1;
+}
+
+function applyBaseLayerSelection(layerName, notifyHost) {
+    if (!map) {
+        return;
+    }
+
+    const normalizedLayerName = normalizeBaseLayerName(layerName);
+    const nextLayer = normalizedLayerName === 'satellite'
+        ? (satelliteLayer || standardLayer)
+        : (standardLayer || satelliteLayer);
+
+    if (!nextLayer) {
+        return;
+    }
+
+    if (standardLayer && map.hasLayer(standardLayer) && standardLayer !== nextLayer) {
+        map.removeLayer(standardLayer);
+    }
+
+    if (satelliteLayer && map.hasLayer(satelliteLayer) && satelliteLayer !== nextLayer) {
+        map.removeLayer(satelliteLayer);
+    }
+
+    if (!map.hasLayer(nextLayer)) {
+        nextLayer.addTo(map);
+    }
+
+    currentBaseLayerName = nextLayer === satelliteLayer ? 'satellite' : 'standard';
+
+    if (notifyHost) {
+        postMessage({
+            type: 'baseLayerChanged',
+            layer: currentBaseLayerName
+        });
+    }
+}
+
+function normalizeBaseLayerName(layerName) {
+    const normalizedLayerName = String(layerName || '').trim().toLowerCase();
+
+    if (normalizedLayerName === 'satellite') {
+        return 'satellite';
+    }
+
+    if (normalizedLayerName === 'standard') {
+        return 'standard';
+    }
+
+    return currentBaseLayerName;
 }
 
 function postMessage(message) {
